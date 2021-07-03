@@ -1,0 +1,38 @@
+{
+  "author": {
+    "name": "wuxianqiang"
+  },
+  "bugs": {
+    "url": "https://github.com/wuxianqiang/wx-apis/issues"
+  },
+  "description": "微信API语法提示.",
+  "devDependencies": {
+  },
+  "files": [
+    "src",
+    "types/*.d.ts"
+  ],
+  "gitHooks": {
+  },
+  "homepage": "https://github.com/wuxianqiang/wx-apis#readme",
+  "keywords": [
+    "微信",
+    "weixin",
+    "wx",
+    "WeChat",
+    "小程序"
+  ],
+  "license": "MIT",
+  "main": "dist/vue.runtime.common.js",
+  "module": "dist/vue.runtime.esm.js",
+  "name": "wx-apis",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/wuxianqiang/wx-apis/issues"
+  },
+  "scripts": {
+  },
+  "sideEffects": false,
+  "typings": "types/index.d.ts",
+  "version": "1.0.1"
+}
