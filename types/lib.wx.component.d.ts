@@ -1,3 +1,25 @@
+/*! *****************************************************************************
+Copyright (c) 2023 Tencent, Inc. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+***************************************************************************** */
+
 declare namespace WechatMiniprogram.Component {
     type Instance<
         TData extends DataOption,
@@ -61,7 +83,7 @@ declare namespace WechatMiniprogram.Component {
     }
     type DataOption = Record<string, any>
     type PropertyOption = Record<string, AllProperty>
-    type MethodOption = Record<string, (...args: any[]) => any>
+    type MethodOption = Record<string, Function>
 
     interface Data<D extends DataOption> {
         /** 组件的内部数据，和 `properties` 一同用于组件的模板渲染 */
@@ -130,6 +152,7 @@ declare namespace WechatMiniprogram.Component {
         ? ValueType<T>
         : FullPropertyToData<Exclude<T, ShortProperty>>
     type FullPropertyToData<T extends AllFullProperty> = ValueType<T['type']>
+    // type FullPropertyToData<T extends AllFullProperty> = unknown extends T['value'] ? ValueType<T['type']> : T['value']
     type PropertyOptionToData<P extends PropertyOption> = {
         [name in keyof P]: PropertyToData<P[name]>
     }
@@ -169,9 +192,9 @@ declare namespace WechatMiniprogram.Component {
         /** 检查组件是否具有 `behavior` （检查时会递归检查被直接或间接引入的所有behavior） */
         hasBehavior(behavior: Behavior.BehaviorIdentifier): void
         /** 触发事件，参见组件事件 */
-        triggerEvent(
+        triggerEvent<DetailType = any>(
             name: string,
-            detail?: Record<string, unknown>,
+            detail?: DetailType,
             options?: TriggerEventOption
         ): void
         /** 创建一个 SelectorQuery 对象，选择器选取范围为这个组件实例内 */
@@ -248,7 +271,35 @@ declare namespace WechatMiniprogram.Component {
             options?: ClearAnimationOptions,
             callback?: () => void
         ): void
+        /**
+         * 当从另一页面跳转到该页面时，获得与来源页面实例通信当事件通道，详见 [wx.navigateTo]((wx.navigateTo))
+         *
+         * 最低基础库版本：[`2.7.3`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)
+         */
         getOpenerEventChannel(): EventChannel
+        /**
+         * 获取更新性能统计信息，详见 [获取更新性能统计信息]((custom-component/update-perf-stat))
+         *
+         *
+         * 最低基础库版本：[`2.12.0`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)
+         */
+        setUpdatePerformanceListener<WithDataPath extends boolean = false>(
+            options: SetUpdatePerformanceListenerOption<WithDataPath>,
+            callback?: UpdatePerformanceListener<WithDataPath>
+        ): void
+
+        /**
+         * 在运行时获取页面或组件所在页面 `touch` 相关事件的 passive 配置，详见 [enablePassiveEvent]((configuration/app#enablePassiveEvent))
+         *
+         * 最低基础库版本：[`2.25.1`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)
+         */
+        getPassiveEvent(callback: (config: PassiveConfig) => void): void
+        /**
+         * 在运行时切换页面或组件所在页面 `touch` 相关事件的 passive 配置，详见 [enablePassiveEvent]((configuration/app#enablePassiveEvent))
+         *
+         * 最低基础库版本：[`2.25.1`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html)
+         */
+        setPassiveEvent(config: PassiveConfig): void
     }
 
     interface ComponentOptions {
@@ -274,6 +325,9 @@ declare namespace WechatMiniprogram.Component {
          * [纯数据字段](https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/pure-data.html) 是一些不用于界面渲染的 data 字段，可以用于提升页面更新性能。从小程序基础库版本 2.8.2 开始支持。
          */
         pureDataPattern?: RegExp
+        /**
+         * [虚拟化组件节点](https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/wxml-wxss.html#%E8%99%9A%E6%8B%9F%E5%8C%96%E7%BB%84%E4%BB%B6%E8%8A%82%E7%82%B9) 使自定义组件内部的第一层节点由自定义组件本身完全决定。从小程序基础库版本 [`2.11.2`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html) 开始支持 */
+        virtualHost?: boolean
     }
 
     interface TriggerEventOption {
@@ -450,6 +504,10 @@ declare namespace WechatMiniprogram.Component {
          *
          * 最低基础库版本： [`2.2.3`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html) */
         definitionFilter?: DefinitionFilter
+        /**
+         * 组件自定义导出，当使用 `behavior: wx://component-export` 时，这个定义段可以用于指定组件被 selectComponent 调用时的返回值，参见 [组件间通信与事件](https://developers.weixin.qq.com/miniprogram/dev/framework/custom-component/events.html)
+         * 最低基础库版本： [`2.2.3`](https://developers.weixin.qq.com/miniprogram/dev/framework/compatibility.html) */
+        export: () => IAnyObject
     }
 
     interface KeyFrame {
@@ -594,6 +652,41 @@ declare namespace WechatMiniprogram.Component {
         /** 起始和结束的滚动范围映射的时间长度，该时间可用于与关键帧动画里的时间 (duration) 相匹配，单位 ms */
         timeRange: number
     }
+
+    interface SetUpdatePerformanceListenerOption<WithDataPath> {
+        /** 是否返回变更的 data 字段信息 */
+        withDataPaths?: WithDataPath
+    }
+    interface UpdatePerformanceListener<WithDataPath> {
+        (res: UpdatePerformance<WithDataPath>): void
+    }
+    interface UpdatePerformance<WithDataPath> {
+        /** 此次更新过程的 ID */
+        updateProcessId: number
+        /** 对于子更新，返回它所属的更新过程 ID */
+        parentUpdateProcessId?: number
+        /** 是否是被合并更新，如果是，则 updateProcessId 表示被合并到的更新过程 ID */
+        isMergedUpdate: boolean
+        /** 此次更新的 data 字段信息，只有 withDataPaths 设为 true 时才会返回 */
+        dataPaths: WithDataPath extends true ? string[] : undefined
+        /** 此次更新进入等待队列时的时间戳 */
+        pendingStartTimestamp: number
+        /** 更新运算开始时的时间戳 */
+        updateStartTimestamp: number
+        /** 更新运算结束时的时间戳 */
+        updateEndTimestamp: number
+    }
+
+    type PassiveConfig =
+        | {
+              /** 是否设置 touchmove 事件为 passive，默认为 `false` */
+              touchmove?: boolean
+              /** 是否设置 touchstart 事件为 passive，默认为 `false` */
+              touchstart?: boolean
+              /** 是否设置 wheel 事件为 passive，默认为 `false` */
+              wheel?: boolean
+          }
+        | boolean
 }
 /** Component构造器可用于定义组件，调用Component构造器时可以指定组件的属性、数据、方法等。
  *

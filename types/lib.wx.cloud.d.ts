@@ -1,3 +1,29 @@
+/*! *****************************************************************************
+Copyright (c) 2023 Tencent, Inc. All rights reserved.
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies
+of the Software, and to permit persons to whom the Software is furnished to do
+so, subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+SOFTWARE.
+***************************************************************************** */
+
+/**
+ * Common interfaces and types
+ */
+
 interface IAPIError {
     errMsg: string
 }
@@ -99,6 +125,18 @@ interface WxCloud {
 
     CloudID: ICloud.ICloudIDConstructor
     CDN: ICloud.ICDNConstructor
+
+    callContainer(param: OQ<ICloud.CallContainerParam>): void
+    callContainer(
+        param: RQ<ICloud.CallContainerParam>
+    ): Promise<ICloud.CallContainerResult>
+
+    connectContainer(param: OQ<ICloud.ConnectContainerParam>): void
+    connectContainer(
+        param: RQ<ICloud.ConnectContainerParam>
+    ): Promise<ICloud.ConnectContainerResult>
+
+    services: ICloud.CloudServices
 }
 
 declare namespace ICloud {
@@ -117,6 +155,82 @@ declare namespace ICloud {
         name: string
         data?: CallFunctionData
         slow?: boolean
+    }
+    // === end ===
+
+    // === API: container ===
+    type CallContainerData = AnyObject
+
+    interface CallContainerResult extends IAPISuccessParam {
+        data: any
+        statusCode: number
+        header: Record<string, any>
+        callID: string
+    }
+
+    interface CallContainerParam extends ICloudAPIParam<CallContainerResult> {
+        path: string
+        service?: string
+        method?: string
+        header?: Record<string, any>
+        data?: any // string, object, ArrayBuffer
+        dataType?: string
+        responseType?: string
+        timeout?: number
+        verbose?: boolean
+        followRedirect?: boolean
+    }
+
+    interface ConnectContainerResult extends IAPISuccessParam {
+        socketTask: WechatMiniprogram.SocketTask
+    }
+
+    interface ConnectSocketOptions extends IAPIParam<void> {
+        header?: Record<string, string>
+        protocols?: string[]
+        tcpNoDelay?: boolean
+        perMessageDeflate?: boolean
+        timeout?: number
+    }
+
+    type ConnectContainerParam = Omit<
+        ConnectSocketOptions,
+        'success' | 'fail' | 'complete'
+    > &
+        ICloudAPIParam<ConnectContainerResult> & {
+            service: string
+            path?: string
+        }
+    // === end ===
+
+    // === API: services ===
+    type AsyncSession<T> = T | PromiseLike<T>
+    interface GatewayCallOptions {
+        path: string
+        data: any
+        shouldSerialize?: boolean
+        apiVersion?: number
+    }
+    interface GatewayInstance {
+        call: (
+            param: CallContainerParam & GatewayCallOptions
+        ) => Promise<CallContainerResult>
+        refresh: (session: AsyncSession<string>) => Promise<void>
+    }
+    interface GatewayConstructOptions {
+        id: string
+        appid?: string
+        domain?: string
+        keepalive?: boolean
+        prefetch?: boolean
+        prefetchOptions?: {
+            concurrent?: number
+            enableQuic?: boolean
+            enableHttp2?: boolean
+        }
+    }
+    interface CloudServices {
+        Gateway: (opts: GatewayConstructOptions) => GatewayInstance
     }
     // === end ===
 
@@ -459,7 +573,7 @@ declare namespace DB {
         AND = 'and',
         OR = 'or',
         NOT = 'not',
-        NOR = 'nor',
+        NOR = 'nor'
     }
 
     class DatabaseLogicCommand {
@@ -490,7 +604,7 @@ declare namespace DB {
         // array
         ALL = 'all',
         ELEM_MATCH = 'elemMatch',
-        SIZE = 'size',
+        SIZE = 'size'
     }
 
     class DatabaseQueryCommand extends DatabaseLogicCommand {
@@ -519,7 +633,7 @@ declare namespace DB {
     }
 
     enum PROJECTION_COMMANDS_LITERAL {
-        SLICE = 'slice',
+        SLICE = 'slice'
     }
 
     class DatabaseProjectionCommand {}
@@ -542,7 +656,7 @@ declare namespace DB {
         UNSHIFT = 'unshift',
         ADD_TO_SET = 'addToSet',
         PULL = 'pull',
-        PULL_ALL = 'pullAll',
+        PULL_ALL = 'pullAll'
     }
 
     class DatabaseUpdateCommand {}
